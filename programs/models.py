@@ -25,8 +25,10 @@ class Model(ABC):
 
     @abstractmethod
     def query(self, messages) :
-        
-        ...
+        '''
+        Query the model with the given messages.
+        '''
+        pass
 
 class OpenAIModel(Model) :
     def _load_model(self) -> None :
@@ -58,7 +60,7 @@ class OpenAIModel(Model) :
         
         return self.parse_response_message(response)
     
-    
+
 
 def openai_test() -> None :
     openai_client = OpenAI(

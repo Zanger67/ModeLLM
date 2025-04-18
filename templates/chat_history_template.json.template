@@ -4,7 +4,7 @@
         "type": "message",
         "id": "1",
         "speaker": "Delegate for Belgium, Committee Chair, YOU",
-        "participants": [
+        "listeners": [
             "Belgium",
             "Brussels",
             "Chair",
