@@ -70,5 +70,49 @@
     "o4-mini-2025-04-16": {
         "class": "openai",
         "priority": false
+    },
+    "meta-llama/Llama-2-7b-chat-hf": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "mistralai/Mistral-7B-Instruct-v0.2": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "tiiuae/falcon-7b-instruct": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "google/gemma-7b-it": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "stabilityai/stablelm-zephyr-3b": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "microsoft/phi-2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "gpt2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "facebook/opt-125m": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "microsoft/phi-1_5": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "distilgpt2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+        "class": "huggingface",
+        "priority": false
     }
 }

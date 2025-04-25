@@ -8,7 +8,7 @@ import replicate
 from icecream import ic
 from openai import OpenAI
 
-from history import CommitteeHistory, Message, Note
+from programs.history import CommitteeHistory, Message, Note
 
 dotenv.load_dotenv()
 
@@ -196,6 +196,238 @@ class OpenAIModel(Model) :
         return self.parse_response_message(response)
     
 
+class HuggingFaceModel(Model):
+    def _load_model(self) -> Any:
+        """
+        Set up to use Hugging Face Inference API instead of loading models locally.
+        """
+        if self.model_name is None:
+            raise ValueError("Model name must be specified")
+        
+        try:
+            import requests
+            
+            # No model loading needed, just return the API key for use in API calls
+            self.api_key = os.getenv("HUGGINGFACE_API_KEY")
+            if not self.api_key:
+                raise ValueError("HUGGINGFACE_API_KEY environment variable not set")
+            
+            # Set up the API endpoint
+            self.api_url = f"https://api-inference.huggingface.co/models/{self.model_name}"
+            self.headers = {"Authorization": f"Bearer {self.api_key}"}
+            
+            ic(f"Using Hugging Face API for model: {self.model_name}")
+            
+            # Return anything (not used directly)
+            return self.api_key
+            
+        except ImportError as e:
+            ic(f"Error importing required packages: {e}")
+            raise ImportError("Please install required packages: 'pip install requests'")
+    
+    def parse_response_message(self, response) -> str:
+        """
+        Parse the response from Hugging Face API.
+        """
+        try:
+            # The response format varies by model type, but for text generation
+            # it usually returns a list of generated texts
+            if isinstance(response, list) and len(response) > 0:
+                if isinstance(response[0], dict) and "generated_text" in response[0]:
+                    return response[0]["generated_text"]
+                else:
+                    return str(response[0])
+            else:
+                return str(response)
+        except Exception as e:
+            ic(f"Error parsing response: {e}")
+            ic("Response:", response)
+            return "ERROR RESPONSE"
+    
+    _MESSAGE_TEMPLATE = '[{time}] {content}'
+    def _format_msg(self, message: Message) -> str:
+        return self._MESSAGE_TEMPLATE.format(
+            time=message.time,
+            content=message.content
+        )
+    
+    _NOTE_TEMPLATE = '[{time}] NOTE TO SELF: {content}'
+    def _format_note(self, note: Note) -> str:
+        return self._NOTE_TEMPLATE.format(
+            time=note.time,
+            content=note.content
+        )
+    
+    def _format_messages_for_hf(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Format messages for Hugging Face models. This combines all messages
+        into a single prompt string with appropriate formatting.
+        """
+        formatted_prompt = ""
+        
+        for msg in messages:
+            role = msg.get('role', '')
+            content = msg.get('content', '')
+            name = msg.get('name', '')
+            
+            if role == 'system':
+                formatted_prompt += f"<|system|>\n{content}\n"
+            elif role == 'user':
+                if name:
+                    formatted_prompt += f"<|user|>{name}: {content}\n"
+                else:
+                    formatted_prompt += f"<|user|>\n{content}\n"
+            elif role == 'assistant':
+                formatted_prompt += f"<|assistant|>\n{content}\n"
+        
+        # Add final assistant prompt to trigger generation
+        formatted_prompt += "<|assistant|>\n"
+        
+        return formatted_prompt
+    
+    def generate_payload(self, 
+                         instructions: str, 
+                         character_name: str, 
+                         history: CommitteeHistory,
+                         send_only_instructions: bool = False) -> List[Dict[str, str]]:
+        """
+        Generate the payload for a Hugging Face model from a list of messages.
+        """
+        if send_only_instructions or history is None:
+            return [
+                {
+                    'role': 'user',
+                    'content': instructions
+                }
+            ]
+        
+        payload = []
+        
+        # Character context/personality
+        character_history = history.get_character_context(character_name)
+        if character_history:
+            ic(f"Character history found and added to payload for '{character_name}'")
+            payload.append({
+                'role': 'system',
+                'content': (
+                    "You are a member of a diplomatic committee with the following description:" + 
+                    f"\n{character_history}"
+                )
+            })
+        else:
+            ic(f"No character history found for '{character_name}'")
+        
+        # Chat history
+        chat_history = history.get_chat_history(character_name)
+        if chat_history:
+            ic(f"Chat history found and added to payload for '{character_name}'")
+            for message in chat_history:
+                if character_name in message.speakers:
+                    payload.append({
+                        'role': 'assistant',
+                        'content': self._format_msg(message)
+                    })
+                else:
+                    speaker = message.speakers[0]
+                    payload.append({
+                        'role': 'user',
+                        'name': speaker,
+                        'content': self._format_msg(message)
+                    })
+        else:
+            ic(f"No chat history found for '{character_name}'")
+        
+        # Notes
+        note_history = history.get_notes(character_name)
+        if note_history:
+            ic(f"Note history found and added to payload for '{character_name}'")
+            for note in note_history:
+                payload.append({
+                    'role': 'assistant',
+                    'content': self._format_note(note)
+                })
+        else:
+            ic(f"No note history found for '{character_name}'")
+        
+        # Add the current instruction
+        payload.append({
+            'role': 'user',
+            'content': instructions
+        })
+        
+        return payload
+    
+    def generate_payload_from_str(self, message: str) -> List[Dict[str, str]]:
+        """
+        Generate the payload for a Hugging Face model from a single string message.
+        NO CONTEXT HISTORY PROVIDED.
+        """
+        return [
+            {
+                'role': 'user',
+                'content': message
+            }
+        ]
+    
+    def query(self, messages: str | List[Any]) -> str:
+        """
+        Query the Hugging Face model via API.
+        """
+        if isinstance(messages, str):
+            messages = self.generate_payload_from_str(messages)
+        
+        # Format messages for Hugging Face
+        prompt = self._format_messages_for_hf(messages)
+        
+        # Generate response via API
+        try:
+            import requests
+            import json
+            import time
+            
+            payload = {
+                "inputs": prompt,
+                "parameters": {
+                    "max_length": 1024,
+                    "temperature": 0.7,
+                    "do_sample": True,
+                    "return_full_text": False
+                }
+            }
+            
+            # Make the API request
+            response = requests.post(self.api_url, headers=self.headers, json=payload)
+            
+            # Handle rate limiting
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 20))
+                ic(f"Rate limited. Waiting for {retry_after} seconds...")
+                time.sleep(retry_after)
+                response = requests.post(self.api_url, headers=self.headers, json=payload)
+            
+            # Handle other errors
+            if response.status_code != 200:
+                error_msg = f"API request failed with status code {response.status_code}: {response.text}"
+                ic(error_msg)
+                return f"ERROR: {error_msg}"
+            
+            # Parse the response
+            result = response.json()
+            ic(f"HF API Response: {result}")
+            
+            # Extract the generated text
+            generated_text = self.parse_response_message(result)
+            
+            # Remove the prompt part to get only the model's response
+            if generated_text.startswith(prompt):
+                return generated_text[len(prompt):].strip()
+                
+            return generated_text
+            
+        except Exception as e:
+            ic(f"Error querying HuggingFace API: {e}")
+            return f"ERROR: Failed to query model: {str(e)}"
+
 # TODO: Implement this; map aliases (names of delegations/delegates) to 
 # specific models and their proper implementations
 class ModelManager:
@@ -309,7 +541,7 @@ class ModelManager:
         self.class_name_to_class = { # TODO: once implemented, add this
             'openai': OpenAIModel,
             'replicate': None,
-            'huggingface': None
+            'huggingface': HuggingFaceModel
         }
     
     def query_character(self, character_name: str, message: str, history: CommitteeHistory) -> str :
