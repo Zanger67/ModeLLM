@@ -11,7 +11,8 @@ dotenv.load_dotenv()
 MODELS_TO_TEST = [
     "gpt-3.5-turbo",
     "gpt-4",
-    "gpt-4-turbo-preview"
+    "gpt-4-turbo-preview",
+    "o3"
 ]
 
 def test_openai_model(model_name: str) -> Dict:

@@ -249,6 +249,7 @@ class PerformanceMetrics:
     votes_cast: int = 0
     proposals_passed: int = 0
     reputation_score: float = 0.0  # 0-10 scale
+    ranking_points: int = 0  # Points from delegate rankings
     
     def __init__(self, character_name: str):
         self.character_name = character_name
@@ -259,12 +260,17 @@ class PerformanceMetrics:
         self.votes_cast = 0
         self.proposals_passed = 0
         self.reputation_score = 5.0  # Neutral starting point
+        self.ranking_points = 0
         
     def update_reputation(self, amount: float):
         """Adjust the reputation score by the given amount."""
         self.reputation_score += amount
         # Clamp between 0 and 10
         self.reputation_score = max(0, min(10, self.reputation_score))
+        
+    def add_ranking_points(self, points: int):
+        """Add points from delegate rankings."""
+        self.ranking_points += points
         
     def __str__(self):
         return (f"Metrics for {self.character_name}:\n"
@@ -274,7 +280,43 @@ class PerformanceMetrics:
                 f"- Proposals created: {self.proposals_created}\n"
                 f"- Votes cast: {self.votes_cast}\n"
                 f"- Proposals passed: {self.proposals_passed}\n"
+                f"- Ranking points: {self.ranking_points}\n"
                 f"- Reputation score: {self.reputation_score:.1f}/10.0")
+
+@dataclass
+class DelegateRanking:
+    """
+    Class to represent a delegate's ranking of other delegates.
+    """
+    ranker: str  # The delegate making the ranking
+    rankings: Dict[str, int]  # Dictionary mapping delegate names to their rank (1, 2, 3, etc.)
+    time: str
+    
+    def __init__(self, 
+                 ranker: str,
+                 rankings: Dict[str, int],
+                 time: str | datetime | None = None):
+        self.ranker = ranker
+        self.rankings = rankings
+        self.time = _convert_datetime(time)
+        
+    def get_points_map(self) -> Dict[str, int]:
+        """
+        Convert rankings to points, where highest rank gets most points.
+        E.g., in a committee with 4 delegates, 1st place gets 3 points, 2nd gets 2, 3rd gets 1.
+        """
+        points = {}
+        max_points = len(self.rankings)
+        
+        for delegate, rank in self.rankings.items():
+            # Convert rank to points (highest rank = most points)
+            points[delegate] = max_points - (rank - 1)
+            
+        return points
+        
+    def __str__(self):
+        ranking_str = ", ".join([f"{delegate}: Rank {rank}" for delegate, rank in self.rankings.items()])
+        return f"{self.ranker}'s rankings: {ranking_str}"
 
 @dataclass
 class CommitteeHistory :
@@ -299,6 +341,7 @@ class CommitteeHistory :
         self.proposals = []                         # List of proposals
         self.voting_records = []                    # List of voting records
         self.metrics = {}                           # {character_name: PerformanceMetrics}
+        self.delegate_rankings = []                 # List of delegate rankings
     
     def _add_note(self, note: Note) -> None :
         '''
@@ -638,6 +681,7 @@ class CommitteeHistory :
                 "proposals_created": metrics.proposals_created,
                 "votes_cast": metrics.votes_cast,
                 "proposals_passed": metrics.proposals_passed,
+                "ranking_points": metrics.ranking_points,
                 "reputation_score": metrics.reputation_score
             }
         
@@ -657,4 +701,237 @@ class CommitteeHistory :
             json.dump(metrics_data, f, indent=4)
         
         print(f"Exported performance metrics to {output_file}")
+        return output_file
+        
+    def export_dialogue(self, output_file: str = None) -> str:
+        """
+        Export a human-readable dialogue transcript of the debate.
+        
+        This creates a text file that focuses on the dialogue between characters,
+        formatted in a readable way for humans to follow the conversation flow.
+        
+        Args:
+            output_file (str, optional): The file to save to.
+                If None, a default filename with timestamp will be used.
+                
+        Returns:
+            str: The path to the saved file.
+        """
+        # Generate a default filename if none provided
+        if output_file is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            
+            # Create exports directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            output_file = os.path.join(output_dir, f"dialogue_transcript_{timestamp}.txt")
+        
+        # Sort all history entries by time
+        all_entries = []
+        
+        # Add messages
+        for i, msg in enumerate(self.history):
+            # Detect the debate phase based on message position
+            # First batch of messages are opening statements
+            phase = ""
+            if i < len(self.character_contexts):  # First round - opening statements
+                phase = "opening"
+            elif not any(isinstance(item, Proposal) for item in all_entries):  # Before any proposals
+                phase = "response"
+                
+            all_entries.append({
+                "time": msg.time,
+                "type": "message",
+                "speaker": ", ".join(msg.speakers),
+                "content": msg.content,
+                "context": msg.context,
+                "phase": phase,
+                "index": i
+            })
+        
+        # Add proposals
+        for proposal in self.proposals:
+            all_entries.append({
+                "time": proposal.time,
+                "type": "proposal",
+                "speaker": proposal.author,
+                "title": proposal.title,
+                "content": proposal.content
+            })
+        
+        # Add voting records
+        for vote_record in self.voting_records:
+            if vote_record.time_closed:  # Only include completed votes
+                result = vote_record.get_result()
+                status = "PASSED" if result["passed"] else "FAILED"
+                all_entries.append({
+                    "time": vote_record.time_closed,
+                    "type": "vote_result",
+                    "proposal_title": vote_record.proposal.title,
+                    "proposal_author": vote_record.proposal.author,
+                    "yes": result["yes"],
+                    "no": result["no"],
+                    "abstain": result["abstain"],
+                    "status": status
+                })
+        
+        # Add delegate rankings
+        for ranking in self.delegate_rankings:
+            all_entries.append({
+                "time": ranking.time,
+                "type": "delegate_ranking",
+                "ranker": ranking.ranker,
+                "rankings": ranking.rankings
+            })
+        
+        # Sort all entries by time
+        all_entries.sort(key=lambda x: x["time"])
+        
+        # Write the dialogue transcript
+        with open(output_file, 'w') as f:
+            # Write header with the debate topic
+            topic = "UN Model Debate"
+            for msg in self.history:
+                if msg.context and "topic" in msg.context.lower():
+                    topic = msg.context.split(":", 1)[1].strip() if ":" in msg.context else msg.context
+                    break
+            
+            f.write(f"DEBATE TRANSCRIPT: {topic}\n")
+            f.write(f"================\n\n")
+            
+            # Write participant information
+            f.write("PARTICIPANTS:\n")
+            for country, description in self.character_contexts.items():
+                f.write(f"- {country}\n")
+            f.write("\n\n")
+            
+            current_phase = None
+            message_count = 0
+            
+            for entry in all_entries:
+                entry_type = entry["type"]
+                
+                # Add phase headers based on message type and order
+                if entry_type == "message":
+                    message_count += 1
+                    
+                    # First set of messages are opening statements
+                    if message_count <= len(self.character_contexts) and current_phase != "opening":
+                        f.write("\n\n=== OPENING STATEMENTS ===\n\n")
+                        current_phase = "opening"
+                    # Next set of messages are responses/discussions
+                    elif message_count > len(self.character_contexts) and message_count <= 2*len(self.character_contexts) and current_phase != "responses":
+                        f.write("\n\n=== RESPONSES AND DISCUSSIONS ===\n\n")
+                        current_phase = "responses"
+                    
+                elif entry_type == "proposal" and current_phase != "proposals":
+                    f.write("\n\n=== PROPOSALS ===\n\n")
+                    current_phase = "proposals"
+                elif entry_type == "vote_result" and current_phase != "voting":
+                    f.write("\n\n=== VOTING RESULTS ===\n\n")
+                    current_phase = "voting"
+                elif entry_type == "delegate_ranking" and current_phase != "rankings":
+                    f.write("\n\n=== DELEGATE RANKINGS ===\n\n")
+                    current_phase = "rankings"
+                
+                # Format the entry based on type
+                if entry_type == "message":
+                    f.write(f"[{entry['time']}] {entry['speaker']}:\n")
+                    f.write(f"{entry['content']}\n\n")
+                    
+                elif entry_type == "proposal":
+                    f.write(f"[{entry['time']}] PROPOSAL by {entry['speaker']}:\n")
+                    f.write(f"Title: {entry['title']}\n")
+                    f.write(f"{entry['content']}\n\n")
+                    
+                elif entry_type == "vote_result":
+                    f.write(f"[{entry['time']}] VOTE RESULT for \"{entry['proposal_title']}\" (by {entry['proposal_author']}):\n")
+                    f.write(f"Result: {entry['status']} with {entry['yes']} Yes, {entry['no']} No, {entry['abstain']} Abstain votes\n\n")
+                
+                elif entry_type == "delegate_ranking":
+                    f.write(f"[{entry['time']}] {entry['ranker']}'s DELEGATE RANKINGS:\n")
+                    rankings = sorted([(delegate, rank) for delegate, rank in entry['rankings'].items()], key=lambda x: x[1])
+                    for delegate, rank in rankings:
+                        f.write(f"  Rank {rank}: {delegate}\n")
+                    f.write("\n")
+        
+        print(f"Exported dialogue transcript to {output_file}")
+        return output_file
+
+    def add_delegate_ranking(self, ranking: DelegateRanking) -> None:
+        """
+        Add a delegate's ranking of other delegates.
+        
+        Args:
+            ranking (DelegateRanking): The ranking to add
+        """
+        self.delegate_rankings.append(ranking)
+        
+        # Apply ranking points to each delegate's metrics
+        points_map = ranking.get_points_map()
+        for delegate, points in points_map.items():
+            if delegate not in self.metrics:
+                self.metrics[delegate] = PerformanceMetrics(delegate)
+            self.metrics[delegate].add_ranking_points(points)
+    
+    def get_delegate_rankings(self) -> List[DelegateRanking]:
+        """Get all delegate rankings."""
+        return self.delegate_rankings
+    
+    def get_leaderboard(self) -> List[Dict[str, Any]]:
+        """
+        Get a sorted leaderboard of delegates based on ranking points.
+        
+        Returns:
+            List[Dict[str, Any]]: Sorted list of delegates with rankings and other metrics
+        """
+        leaderboard = []
+        
+        for delegate, metrics in self.metrics.items():
+            leaderboard.append({
+                "delegate": delegate,
+                "ranking_points": metrics.ranking_points,
+                "proposals_passed": metrics.proposals_passed,
+                "reputation_score": metrics.reputation_score
+            })
+        
+        # Sort by ranking points (primary) and reputation score (secondary)
+        leaderboard.sort(key=lambda x: (x["ranking_points"], x["reputation_score"]), reverse=True)
+        
+        # Add rank to each entry
+        for i, entry in enumerate(leaderboard):
+            entry["rank"] = i + 1
+            
+        return leaderboard
+    
+    def export_leaderboard(self, output_file: str = None) -> str:
+        """
+        Export the delegate leaderboard to a JSON file.
+        
+        Args:
+            output_file (str, optional): The file to save to.
+                If None, a default filename with timestamp will be used.
+                
+        Returns:
+            str: The path to the saved file.
+        """
+        leaderboard = self.get_leaderboard()
+        
+        # Generate a default filename if none provided
+        if output_file is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            
+            # Create exports directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            output_file = os.path.join(output_dir, f"delegate_leaderboard_{timestamp}.json")
+        
+        # Convert to JSON and save
+        import json
+        with open(output_file, 'w') as f:
+            json.dump(leaderboard, f, indent=4)
+        
+        print(f"Exported delegate leaderboard to {output_file}")
         return output_file

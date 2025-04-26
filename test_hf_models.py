@@ -15,8 +15,10 @@ MODELS_TO_TEST = [
     "distilgpt2",
     "microsoft/phi-2",
     "google/gemma-7b-it",
+    "meta-llama/Llama-3.1-8B-Instruct",
     "meta-llama/Llama-2-7b-chat-hf",
-    "mistralai/Mistral-7B-Instruct-v0.2"
+    "mistralai/Mistral-7B-Instruct-v0.2",
+    "mistralai/Mistral-7B-Instruct-v0.3"
 ]
 
 def test_huggingface_model(model_name: str) -> Dict:
@@ -56,7 +58,7 @@ def test_huggingface_model(model_name: str) -> Dict:
     
     try:
         print(f"Testing model: {model_name}...")
-        response = requests.post(api_url, headers=headers, json=payload, timeout=10)
+        response = requests.post(api_url, headers=headers, json=payload, timeout=20)
         elapsed_time = time.time() - start_time
         
         # Check if request was successful

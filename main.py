@@ -39,6 +39,23 @@ Then, offer one specific proposal related to {topic} that aligns with your natio
 Keep your response under 200 words and maintain formal diplomatic language.
 """
 
+PAIRWISE_DISCUSSION_PROMPT = """
+You are having a direct conversation with the delegate from {other_country} about the various proposals on {topic}.
+
+The following proposals have been submitted:
+{proposals_summary}
+
+As the representative of {country}, engage in a focused discussion with {other_country} about these proposals.
+In your response:
+1. Address at least one specific aspect of {other_country}'s positions or proposals
+2. Clearly state your position on their ideas
+3. Suggest potential areas of collaboration or compromise
+4. Be diplomatic but represent your national interests authentically
+
+This is a bilateral conversation, so focus specifically on {other_country}'s interests and your potential alignment or disagreement.
+Keep your response under 250 words and maintain formal diplomatic language.
+"""
+
 PROPOSAL_PROMPT = """
 Based on the discussion so far, create a formal proposal on {topic}.
 
@@ -49,6 +66,29 @@ Your proposal should:
 4. Be politically viable
 
 Keep your proposal under 300 words and make it specific enough to vote on.
+"""
+
+DELEGATE_RANKING_PROMPT = """
+The debate on {topic} is nearing its conclusion. As the representative of {country}, you need to rank the other delegates based on their contributions, proposals, and diplomatic engagement.
+
+Here are the other delegates:
+{other_delegates}
+
+For each delegate, consider:
+1. The quality and feasibility of their proposals
+2. Their willingness to collaborate and find common ground
+3. Their diplomatic skill and respectful engagement
+4. How well they represented their national interests
+
+Provide a ranking of all other delegates (not including yourself) from 1 (highest) to {num_delegates} (lowest).
+For each delegate, briefly explain your ranking (1-2 sentences).
+
+Format your response as:
+Rank 1: [Country Name] - [Brief explanation]
+Rank 2: [Country Name] - [Brief explanation]
+And so on...
+
+Be diplomatic but honest in your assessment.
 """
 
 VOTING_PROMPT = """
@@ -147,7 +187,93 @@ def parse_model_response(response: str, prompt_type: str, delegate: str) -> Dict
     
     return result
 
-def run_simulation(mock_mode=False):
+def extract_delegate_rankings(response: str, all_delegates: List[str], ranker: str) -> Dict[str, int]:
+    """
+    Extract delegate rankings from the model's response.
+    
+    Args:
+        response (str): The model's response containing rankings
+        all_delegates (List[str]): List of all delegates
+        ranker (str): The delegate who made the ranking (will be excluded from results)
+        
+    Returns:
+        Dict[str, int]: Map of delegate names to their rank (1, 2, 3, etc.)
+    """
+    rankings = {}
+    other_delegates = [d for d in all_delegates if d != ranker]
+    
+    # Try to extract rankings from formatted response
+    lines = response.strip().split('\n')
+    for line in lines:
+        if line.lower().startswith("rank "):
+            # Extract the rank number
+            try:
+                rank_part = line.split(":", 1)[0].strip()
+                rank = int(rank_part.replace("Rank ", ""))
+                
+                # Extract the country name
+                country_part = line.split(":", 1)[1].strip()
+                if "-" in country_part:
+                    country = country_part.split("-", 1)[0].strip()
+                else:
+                    country = country_part
+                
+                # Check if this is a valid country
+                for delegate in other_delegates:
+                    if delegate.lower() in country.lower():
+                        rankings[delegate] = rank
+                        break
+            except:
+                continue
+    
+    # If we couldn't extract all rankings, assign default ones
+    missing_delegates = [d for d in other_delegates if d not in rankings]
+    used_ranks = set(rankings.values())
+    available_ranks = [r for r in range(1, len(other_delegates) + 1) if r not in used_ranks]
+    
+    for delegate in missing_delegates:
+        if available_ranks:
+            rankings[delegate] = available_ranks.pop(0)
+        else:
+            # In case something went wrong, assign a default rank
+            rankings[delegate] = len(rankings) + 1
+    
+    return rankings
+
+def generate_delegate_pairs(delegates: List[str]) -> List[tuple]:
+    """
+    Generate all possible pairs of delegates for bilateral discussions.
+    
+    Args:
+        delegates (List[str]): List of delegate names
+        
+    Returns:
+        List[tuple]: List of tuples containing pairs of delegates
+    """
+    pairs = []
+    for i in range(len(delegates)):
+        for j in range(i + 1, len(delegates)):
+            pairs.append((delegates[i], delegates[j]))
+    return pairs
+
+def format_proposals_summary(proposals: List[Proposal]) -> str:
+    """
+    Format a list of proposals into a readable summary.
+    
+    Args:
+        proposals (List[Proposal]): List of proposals
+        
+    Returns:
+        str: Formatted summary of proposals
+    """
+    summary = ""
+    for i, proposal in enumerate(proposals):
+        summary += f"PROPOSAL {i+1} from {proposal.author}:\n"
+        summary += f"TITLE: {proposal.title}\n"
+        summary += f"CONTENT: {proposal.content}\n\n"
+    return summary
+
+def run_simulation():
     # Initialize model manager and committee history
     mm = ModelManager()
     history = CommitteeHistory()
@@ -155,10 +281,10 @@ def run_simulation(mock_mode=False):
     # Assign different Hugging Face models to different delegates
     # Using smaller models that work better with the Inference API
     models = {
-        "USA": "gpt2",                      # GPT-2 model for USA
-        "China": "gpt2",       # OPT-125m for China
-        "EU": "gpt2",          # Phi-1.5 for EU 
-        "India": "gpt2"               # DistilGPT-2 for India
+        "USA": "gpt-4.1",                      # GPT-2 model for USA
+        "China": "gpt-4o-2024-11-20",       # OPT-125m for China
+        "EU": "o1",          # Phi-1.5 for EU 
+        "India": "gpt-4"               # DistilGPT-2 for India
     }
     
     # Setup characters with their respective models
@@ -173,119 +299,25 @@ def run_simulation(mock_mode=False):
     print(f"Participating countries: {', '.join(all_delegates)}")
     print("=" * 50)
     
-    # Mock responses for testing without API calls
-    mock_responses = {
-        "opening": {
-            "USA": "As the representative of the United States, I want to emphasize our commitment to addressing climate change through innovation and market-based approaches. We believe that a global carbon tax must be implemented carefully to avoid economic disruption while still reducing emissions effectively.",
-            "China": "China recognizes the urgent need to address climate change as a global challenge. We support the principle of common but differentiated responsibilities. Developing nations should have flexibility in implementation timelines for any carbon tax proposal.",
-            "EU": "The European Union stands firmly behind ambitious climate action. We advocate for a binding global carbon tax framework with clear emissions reduction targets. This approach has proven effective within our borders and should be expanded globally.",
-            "India": "India believes that any climate policy must recognize historical responsibilities of developed nations. We support climate action that doesn't hinder the development of emerging economies and emphasize the need for climate finance and technology transfer alongside any carbon tax."
-        },
-        "response": {
-            "USA": "I appreciate China's emphasis on differentiated responsibilities, but innovation rather than rigid timelines should be our focus. The US proposes increased investment in clean energy research shared globally, which would benefit all nations while maintaining economic growth.",
-            "China": "I agree with India's point about historical responsibilities. China proposes a graduated carbon tax system with different rates for developed versus developing nations, acknowledging different starting points while working toward a common goal.",
-            "EU": "While I understand the US concerns about economic impacts, the EU's experience shows that clear carbon pricing drives innovation. We propose a global carbon market with trade adjustments to ensure fair competition while reducing emissions.",
-            "India": "Building on the EU's point about a global framework, India proposes that any carbon tax must include substantial technology transfer mechanisms and climate finance for developing nations to ensure equitable transition paths."
-        },
-        "note": {
-            "USA": "China and India seem aligned on differentiated responsibilities. The EU is pushing hard for binding targets which might be too rigid. Need to emphasize innovation and flexibility while showing climate leadership. Potential ally: EU on innovation, but need to moderate their regulatory approach.",
-            "China": "The US and EU have different approaches but both represent developed economies. India is a natural ally on demanding flexibility and support for developing nations. Need to avoid appearing obstructionist while protecting our growth priorities.",
-            "EU": "The US shares our climate concerns but is too hesitant on binding measures. India and China are aligned against strict uniform standards. Need to emphasize economic opportunities of green transition to bring the US onboard while offering some flexibility to developing nations.",
-            "India": "China is our strongest potential ally. The EU has ambitious goals but doesn't adequately address equity. The US focus on innovation could be leveraged if tied to technology transfer. Need to maintain firm position on differentiated responsibilities."
-        },
-        "proposal": {
-            "USA": "PROPOSAL: GLOBAL CLEAN ENERGY INNOVATION COMPACT\n\n1. Establish a $100 billion annual clean energy innovation fund with contributions scaled to GDP and historical emissions\n2. Create a global carbon pricing framework with flexibility for implementation based on economic development level\n3. Develop a clean technology transfer mechanism to accelerate adoption in developing economies while respecting intellectual property",
-            "China": "DIFFERENTIATED CARBON TAX FRAMEWORK\n\n1. Implement a three-tiered carbon tax system with different rates and timelines for high, middle, and low-income countries\n2. Create a technology sharing platform with joint research initiatives on clean energy\n3. Establish a climate adaptation fund prioritizing vulnerable regions",
-            "EU": "GLOBAL CARBON MARKET INITIATIVE\n\n1. Create a binding international carbon market with annually decreasing caps on total emissions\n2. Implement border carbon adjustments to prevent carbon leakage while ensuring fair competition\n3. Establish an independent monitoring body to verify emissions reductions and ensure compliance",
-            "India": "EQUITABLE CLIMATE TRANSITION PROPOSAL\n\n1. Implement a graduated carbon tax based on historical cumulative emissions and current development status\n2. Create a mandatory clean technology transfer framework from developed to developing nations\n3. Establish a $200 billion climate finance mechanism for renewable energy projects in developing economies"
-        },
-        "vote": {
-            "USA": {
-                "USA": "yes",
-                "China": "abstain - While we appreciate the innovation focus, this proposal doesn't adequately address differentiated responsibilities for developing nations.",
-                "EU": "yes - We support the innovation fund and recognize the flexible implementation approach as a positive step forward.",
-                "India": "no - This proposal fails to adequately address historical responsibilities and doesn't provide sufficient guarantees for technology transfer to developing nations."
-            },
-            "China": {
-                "USA": "abstain - While we appreciate the differentiated approach, we believe more emphasis on innovation is needed rather than rigid tax structures.",
-                "China": "yes",
-                "EU": "abstain - The differentiated approach has merit, but we prefer more binding emissions reduction targets.",
-                "India": "yes - This proposal recognizes the different circumstances of nations and provides a fair framework for global action."
-            },
-            "EU": {
-                "USA": "yes - While we prefer more flexibility, we support the market-based approach and monitoring mechanisms.",
-                "China": "no - This proposal imposes overly strict regulations that don't adequately consider different development stages.",
-                "EU": "yes",
-                "India": "no - This framework doesn't sufficiently address equity concerns and places undue burden on developing economies."
-            },
-            "India": {
-                "USA": "no - The proposal places too much emphasis on historical emissions which is backward-looking rather than focusing on future innovation.",
-                "China": "yes - This approach properly recognizes historical responsibility and provides necessary support for developing nations.",
-                "EU": "abstain - While we support the climate finance mechanism, we have concerns about the mandatory technology transfer framework.",
-                "India": "yes"
-            }
-        }
-    }
-    
-    # Opening statements
+    # 1. Opening statements
     print("\n=== OPENING STATEMENTS ===\n")
     for delegate in all_delegates:
         prompt = OPENING_PROMPT.format(topic=TOPIC, country=delegate)
         try:
-            if mock_mode:
-                response = mock_responses["opening"][delegate]
-            else:
-                response = mm.query_character(delegate, prompt, history)
-                
+            response = mm.query_character(delegate, prompt, history)
             history.add_history(create_message(response, delegate, all_delegates))
             print(f"[{delegate}]: {response}\n")
             time.sleep(1)  # Pause between responses
         except Exception as e:
             print(f"Error getting response from {delegate}: {e}")
     
-    # Responses to other delegates
-    print("\n=== RESPONSES AND DISCUSSIONS ===\n")
-    for delegate in all_delegates:
-        prompt = RESPONSE_PROMPT.format(topic=TOPIC)
-        try:
-            if mock_mode:
-                response = mock_responses["response"][delegate]
-            else:
-                response = mm.query_character(delegate, prompt, history)
-                
-            history.add_history(create_message(response, delegate, all_delegates))
-            print(f"[{delegate}]: {response}\n")
-            time.sleep(1)
-        except Exception as e:
-            print(f"Error getting response from {delegate}: {e}")
-    
-    # Private notes
-    print("\n=== DELEGATES TAKING PRIVATE NOTES ===\n")
-    for delegate in all_delegates:
-        prompt = NOTE_PROMPT
-        try:
-            if mock_mode:
-                response = mock_responses["note"][delegate]
-            else:
-                response = mm.query_character(delegate, prompt, history)
-                
-            history.add_history(create_note(response, delegate))
-            print(f"[{delegate} - PRIVATE NOTE]: {response}\n")
-            time.sleep(1)
-        except Exception as e:
-            print(f"Error getting note from {delegate}: {e}")
-    
-    # Proposal phase - let each delegate submit a proposal
+    # 2. Proposal phase - let each delegate submit a proposal
     print("\n=== PROPOSAL PHASE ===\n")
     proposals = []
     for delegate in all_delegates:
         prompt = PROPOSAL_PROMPT.format(topic=TOPIC)
         try:
-            if mock_mode:
-                response = mock_responses["proposal"][delegate]
-            else:
-                response = mm.query_character(delegate, prompt, history)
-                
+            response = mm.query_character(delegate, prompt, history)
             parsed = parse_model_response(response, "proposal", delegate)
             
             # Create and add proposal
@@ -298,7 +330,63 @@ def run_simulation(mock_mode=False):
         except Exception as e:
             print(f"Error getting proposal from {delegate}: {e}")
     
-    # Voting phase - vote on each proposal
+    # 3. Pairwise discussion phase - delegates discuss each other's proposals
+    print("\n=== PAIRWISE DISCUSSIONS ===\n")
+    
+    # Generate all possible pairs of delegates
+    delegate_pairs = generate_delegate_pairs(all_delegates)
+    proposals_summary = format_proposals_summary(proposals)
+    
+    for delegate1, delegate2 in delegate_pairs:
+        print(f"\n--- Discussion between {delegate1} and {delegate2} ---\n")
+        
+        # Delegate 1 speaks to Delegate 2
+        prompt = PAIRWISE_DISCUSSION_PROMPT.format(
+            topic=TOPIC,
+            country=delegate1,
+            other_country=delegate2,
+            proposals_summary=proposals_summary
+        )
+        
+        try:
+            response = mm.query_character(delegate1, prompt, history)
+            # Set specific listeners (the other delegate) but include all as listeners
+            # for the history tracking
+            history.add_history(create_message(response, delegate1, all_delegates))
+            print(f"[{delegate1} to {delegate2}]: {response}\n")
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error getting response from {delegate1}: {e}")
+        
+        # Delegate 2 responds to Delegate 1
+        prompt = PAIRWISE_DISCUSSION_PROMPT.format(
+            topic=TOPIC,
+            country=delegate2,
+            other_country=delegate1,
+            proposals_summary=proposals_summary
+        )
+        
+        try:
+            response = mm.query_character(delegate2, prompt, history)
+            history.add_history(create_message(response, delegate2, all_delegates))
+            print(f"[{delegate2} to {delegate1}]: {response}\n")
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error getting response from {delegate2}: {e}")
+    
+    # 4. Private notes
+    print("\n=== DELEGATES TAKING PRIVATE NOTES ===\n")
+    for delegate in all_delegates:
+        prompt = NOTE_PROMPT
+        try:
+            response = mm.query_character(delegate, prompt, history)
+            history.add_history(create_note(response, delegate))
+            print(f"[{delegate} - PRIVATE NOTE]: {response}\n")
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error getting note from {delegate}: {e}")
+    
+    # 5. Voting phase - vote on each proposal
     print("\n=== VOTING PHASE ===\n")
     for proposal in proposals:
         print(f"\nVoting on: {proposal.title} (by {proposal.author})\n")
@@ -321,13 +409,9 @@ def run_simulation(mock_mode=False):
             )
             
             try:
-                if mock_mode:
-                    response = mock_responses["vote"][proposal.author][delegate]
-                    vote = response.split(" ")[0]  # Extract the vote part
-                else:
-                    response = mm.query_character(delegate, prompt, history)
-                    parsed = parse_model_response(response, "vote", delegate)
-                    vote = parsed["vote"]
+                response = mm.query_character(delegate, prompt, history)
+                parsed = parse_model_response(response, "vote", delegate)
+                vote = parsed["vote"]
                     
                 voting_record.add_vote(delegate, vote)
                 print(f"[{delegate}]: Votes {vote.upper()}")
@@ -346,13 +430,62 @@ def run_simulation(mock_mode=False):
         print(f"Proposal has {status}")
         print("=" * 50)
     
-    # Export history and metrics
+    # 6. Delegate ranking phase
+    print("\n=== DELEGATE RANKING PHASE ===\n")
+    
+    for delegate in all_delegates:
+        # Create a string of other delegates
+        other_delegates_str = "\n".join([d for d in all_delegates if d != delegate])
+        num_delegates = len(all_delegates) - 1  # Exclude self
+        
+        prompt = DELEGATE_RANKING_PROMPT.format(
+            topic=TOPIC,
+            country=delegate,
+            other_delegates=other_delegates_str,
+            num_delegates=num_delegates
+        )
+        
+        try:
+            response = mm.query_character(delegate, prompt, history)
+            print(f"[{delegate} - RANKINGS]:\n{response}\n")
+            
+            # Parse the rankings
+            rankings = extract_delegate_rankings(response, all_delegates, delegate)
+            
+            # Add to history
+            ranking = DelegateRanking(delegate, rankings)
+            history.add_delegate_ranking(ranking)
+            
+            # Display the parsed rankings
+            print(f"Parsed rankings from {delegate}:")
+            for ranked_delegate, rank in sorted(rankings.items(), key=lambda x: x[1]):
+                print(f"  Rank {rank}: {ranked_delegate}")
+            print()
+            
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error getting rankings from {delegate}: {e}")
+    
+    # Create and display leaderboard
+    print("\n=== DELEGATE LEADERBOARD ===\n")
+    leaderboard = history.get_leaderboard()
+    
+    print("Final rankings based on peer assessments:")
+    for entry in leaderboard:
+        print(f"Rank {entry['rank']}: {entry['delegate']} - {entry['ranking_points']} points")
+    print()
+    
+    # Export all data
     history_file = history.export_to_file()
     metrics_file = history.export_metrics()
+    leaderboard_file = history.export_leaderboard()
+    dialogue_file = history.export_dialogue()
     
     print("\n=== SIMULATION COMPLETE ===\n")
     print(f"History exported to: {history_file}")
     print(f"Metrics exported to: {metrics_file}")
+    print(f"Leaderboard exported to: {leaderboard_file}")
+    print(f"Dialogue transcript exported to: {dialogue_file}")
     
     # Display performance metrics
     print("\n=== PERFORMANCE METRICS ===\n")
@@ -368,9 +501,7 @@ def main() -> None:
     print("=" * 50)
     
     try:
-        # Set mock_mode=False to use actual API calls to models
-        # Set mock_mode=True if you don't have API keys for testing
-        history = run_simulation(mock_mode=False)  # Set to True for testing without API keys
+        history = run_simulation()
         print("Simulation completed successfully!")
     except Exception as e:
         print(f"Error running simulation: {e}")

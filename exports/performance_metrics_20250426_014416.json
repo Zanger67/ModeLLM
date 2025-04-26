@@ -1,0 +1,42 @@
+{
+    "USA": {
+        "messages_sent": 4,
+        "messages_received": 16,
+        "notes_created": 1,
+        "proposals_created": 1,
+        "votes_cast": 0,
+        "proposals_passed": 1,
+        "ranking_points": 0,
+        "reputation_score": 5.5
+    },
+    "China": {
+        "messages_sent": 4,
+        "messages_received": 16,
+        "notes_created": 1,
+        "proposals_created": 1,
+        "votes_cast": 0,
+        "proposals_passed": 1,
+        "ranking_points": 0,
+        "reputation_score": 5.5
+    },
+    "EU": {
+        "messages_sent": 4,
+        "messages_received": 16,
+        "notes_created": 1,
+        "proposals_created": 1,
+        "votes_cast": 0,
+        "proposals_passed": 0,
+        "ranking_points": 0,
+        "reputation_score": 5.0
+    },
+    "India": {
+        "messages_sent": 4,
+        "messages_received": 16,
+        "notes_created": 1,
+        "proposals_created": 1,
+        "votes_cast": 0,
+        "proposals_passed": 1,
+        "ranking_points": 0,
+        "reputation_score": 5.5
+    }
+}

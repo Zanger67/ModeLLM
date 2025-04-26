@@ -9,11 +9,41 @@ This project creates a simulated environment where LLM agents representing diffe
 ## Features
 
 - Multi-agent simulation with different LLMs via API calls (OpenAI, Hugging Face, Replicate)
-- Model UN-inspired debate format with speeches, proposals, and voting
-- Performance metrics tracking (messages sent, proposals passed, reputation)
-- Export functionality for conversation history and metrics
-- Voting mechanism for proposals with results tracking
+- Realistic parliamentary procedure with structured debate phases:
+  - Opening statements
+  - Proposal submissions
+  - Pairwise bilateral discussions about proposals
+  - Voting on proposals
+  - Delegate peer assessment and ranking
+- Performance metrics tracking (messages, proposals, votes, peer rankings)
+- Comprehensive leaderboard system with point-based rankings
+- Export functionality for conversation history, metrics, and human-readable transcripts
+- Voting mechanism for proposals with transparent results tracking
 - Mock mode for testing without API keys
+
+## Debate Structure
+
+The simulation follows a formal parliamentary procedure:
+
+1. **Opening Statements**: Each delegate presents their country's position and priorities
+2. **Proposal Phase**: Delegates submit formal proposals addressing the debate topic
+3. **Pairwise Discussions**: Delegates engage in bilateral conversations with each other discussing the submitted proposals
+4. **Private Notes**: Delegates record private strategic notes (not shared with others)
+5. **Voting Phase**: Delegates vote on each proposal (yes/no/abstain) with explanations
+6. **Delegate Ranking**: Each delegate ranks their peers based on contributions and diplomacy
+7. **Leaderboard Generation**: Final rankings are calculated based on peer assessments
+
+## Metrics System
+
+The simulation tracks comprehensive performance metrics:
+
+- **Messages**: Sent and received by each delegate
+- **Proposals**: Created and passed
+- **Votes**: Cast on proposals
+- **Ranking Points**: Awarded based on peer assessments (higher ranks get more points)
+- **Reputation Score**: Dynamic score affected by diplomatic behavior and proposal success
+
+The final leaderboard ranks delegates based primarily on peer assessment points, with reputation score as a tiebreaker.
 
 ## Setup
 
@@ -49,9 +79,11 @@ python main.py
 
 ## Output
 
-The simulation generates two types of output files in the `exports` directory:
-- JSON history files with all messages, notes, and interactions
+The simulation generates several output files in the `exports` directory:
+- JSON history files with all messages, notes, proposals, and voting records
 - Performance metrics tracking each agent's effectiveness
+- Leaderboard rankings based on peer assessments
+- Human-readable dialogue transcript for easier comprehension of the debate
 
 ## Adding New Models
 
@@ -65,7 +97,7 @@ To add support for a new LLM provider:
 
 - `programs/` - Core modules and classes
   - `models.py` - Model implementations for different LLM providers
-  - `history.py` - Conversation and committee history tracking
+  - `history.py` - Conversation tracking, metrics, and ranking systems
   - `models.json` - Configuration for available models
 - `templates/` - Templates for export formats
 - `exports/` - Output directory for simulation results
