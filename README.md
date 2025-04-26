@@ -67,7 +67,7 @@ REPLICATE_API_TOKEN=your_replicate_token_here
 
 4. Run the simulation:
 ```bash
-python main.py
+python3 main.py
 ```
 
 ## Configuration
@@ -75,7 +75,6 @@ python main.py
 - Modify `main.py` to change the debate topic, characters, or prompts
 - Edit `models.json` to add new models or change priority settings
 - Adjust `CHARACTERS` dictionary in `main.py` to change which countries participate
-- Set `mock_mode=True` in `main.py` to run without API calls (for testing)
 
 ## Output
 
