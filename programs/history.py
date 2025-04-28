@@ -149,9 +149,9 @@ class CommitteeHistory :
     '''
     
     history: list                   # Chat history
-    notes:  Dict[str: List[Note]]   # Notes left by the agent
+    notes: Dict[str, List[Note]]   # Notes left by the agent
     
-    character_contexts: Dict[str: str] # {character name: context about character} 
+    character_contexts: Dict[str, str] # {character name: context about character} 
                                        # E.g. context="You are a warlord pirate from the 1700s 
                                        #               in the Mediterranean."
     # msg_id: int = 0               # Message ID for the next message - USE INDEX IN SELF.HISTORY

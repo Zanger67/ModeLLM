@@ -39,26 +39,29 @@ def test2_replicate_llama_4_test() -> None :
 
 
 from models import ModelManager
+from history import CommitteeHistory
 def test3_model_manager_test() -> None :
+    hist = CommitteeHistory()
+    
     mm = ModelManager()
     mm.add_character("test", "gpt-4")
     mm.add_character("test2", "o4-mini")
     mm.add_character("test3", "o1-mini")
     
     input1 = "Hi gpt-4o! What's the best place to visit during the summer in Europe?"
-    output1 = mm.query_character("test", input1)
+    output1 = mm.query_character("test", input1, hist)
     print(f"Input1: {input1}")
     print(f"Output1: {output1}")
     print()
     
     input2 = "Hi o4-mini! What's the best place to visit during the summer in Asia? I'm a swimmer and hiker!"
-    output2 = mm.query_character("test2", input2)
+    output2 = mm.query_character("test2", input2, hist)
     print(f"Input2: {input2}")
     print(f"Output2: {output2}")
     print()
     
     input3 = "Hi o1-mini! What's the best place to visit during the summer in North America? I'm a jazz musician!"
-    output3 = mm.query_character("test3", input3)
+    output3 = mm.query_character("test3", input3, hist)
     print(f"Input3: {input3}")
     print(f"Output3: {output3}")
     print()

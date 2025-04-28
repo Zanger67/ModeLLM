@@ -1,0 +1,5 @@
+icecream==2.1.4
+openai==1.76.0
+python-dotenv==1.1.0
+python_dateutil==2.9.0.post0
+replicate==1.0.4

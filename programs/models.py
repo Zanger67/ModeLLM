@@ -59,7 +59,7 @@ class OpenAIModel(Model) :
         return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     
-    def parse_response_message(self, response) -> str :
+    def get_response_str(self, response) -> str :
         try :
             return response.choices[0].message.content
         except AttributeError as e :
@@ -93,7 +93,11 @@ class OpenAIModel(Model) :
         '''
         Generate the payload for an OpenAI model from a list of messages.
         '''
+        
+        # For if we want to send just a regular query with no contexts -- not to
+        # be used in general
         if send_only_instructions or history is None :
+            ic(f"Sending only instructions for '{character_name}'")
             return [
                 {
                     'role': 'user',
@@ -149,6 +153,8 @@ class OpenAIModel(Model) :
         else :
             ic(f"No chat history found for '{character_name}'")
 
+
+
         # TODO: see if it would be preferable to insert these alongside the messages so
         #       that everything's in creation order rather than having notes separate and at the end
         note_history = history.get_notes(character_name)
@@ -161,6 +167,17 @@ class OpenAIModel(Model) :
                 })
         else :
             ic(f"No note history found for '{character_name}'")
+            
+            
+            
+            
+        # Add the instructions to the payload
+        payload.append({
+            'role': 'system',
+            'content': instructions
+        })
+        
+        return payload
         
     
     def generate_payload_from_str(self, message: str) -> List[Dict[str, str]] :
