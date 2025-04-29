@@ -11,10 +11,12 @@ This project creates a simulated environment where LLM agents representing diffe
 - Multi-agent simulation with different LLMs via API calls (OpenAI, Hugging Face, Replicate)
 - Realistic parliamentary procedure with structured debate phases:
   - Opening statements
+  - Private strategic notes
   - Proposal submissions
   - Pairwise bilateral discussions about proposals
   - Voting on proposals
   - Delegate peer assessment and ranking
+- Rich context memory system ensuring models maintain awareness of all prior exchanges
 - Performance metrics tracking (messages, proposals, votes, peer rankings)
 - Comprehensive leaderboard system with point-based rankings
 - Export functionality for conversation history, metrics, and human-readable transcripts
@@ -26,12 +28,24 @@ This project creates a simulated environment where LLM agents representing diffe
 The simulation follows a formal parliamentary procedure:
 
 1. **Opening Statements**: Each delegate presents their country's position and priorities
-2. **Proposal Phase**: Delegates submit formal proposals addressing the debate topic
-3. **Pairwise Discussions**: Delegates engage in bilateral conversations with each other discussing the submitted proposals
-4. **Private Notes**: Delegates record private strategic notes (not shared with others)
+2. **Private Notes**: Delegates record private strategic notes (not shared directly with others but used to guide their own future decisions)
+3. **Proposal Phase**: Delegates submit formal proposals addressing the debate topic
+4. **Pairwise Discussions**: Delegates engage in bilateral conversations with each other discussing the submitted proposals
 5. **Voting Phase**: Delegates vote on each proposal (yes/no/abstain) with explanations
 6. **Delegate Ranking**: Each delegate ranks their peers based on contributions and diplomacy
 7. **Leaderboard Generation**: Final rankings are calculated based on peer assessments
+
+## Context Memory Management
+
+The simulation employs a sophisticated context memory system:
+
+- Each model maintains awareness of all prior statements, proposals, and voting history
+- Private notes are included in context for the authoring delegate only
+- Character personalities and national interests guide responses consistently
+- Prompts for each phase build upon the accumulated context
+- Messages are formatted appropriately for different model providers (OpenAI, Hugging Face)
+
+This context-rich approach ensures delegates maintain consistent positions, can reference previous statements, and develop more coherent diplomatic strategies.
 
 ## Metrics System
 
@@ -82,13 +96,13 @@ The simulation generates several output files in the `exports` directory:
 - JSON history files with all messages, notes, proposals, and voting records
 - Performance metrics tracking each agent's effectiveness
 - Leaderboard rankings based on peer assessments
-- Human-readable dialogue transcript for easier comprehension of the debate
+- Human-readable dialogue transcript that includes all exchanges, private notes, proposals, and voting results
 
 ## Adding New Models
 
 To add support for a new LLM provider:
 1. Create a new class that inherits from the `Model` abstract base class
-2. Implement the required methods (`_load_model()`, `query()`, etc.)
+2. Implement the required methods (`_load_model()`, `query()`, `generate_payload()`)
 3. Update the `_load_model_options()` method in `ModelManager` to include your new class
 4. Add models to the `models.json` configuration file
 
