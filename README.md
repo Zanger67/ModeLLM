@@ -64,7 +64,6 @@ The final leaderboard ranks delegates based primarily on peer assessment points,
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/model-un-simulation.git
-cd model-un-simulation
 ```
 
 2. Install dependencies:
