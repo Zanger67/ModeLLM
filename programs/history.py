@@ -750,6 +750,16 @@ class CommitteeHistory :
                 "index": i
             })
         
+        # Add notes (private thoughts)
+        for author, notes_list in self.notes.items():
+            for note in notes_list:
+                all_entries.append({
+                    "time": note.time,
+                    "type": "private_note",
+                    "author": note.author,
+                    "content": note.content
+                })
+        
         # Add proposals
         for proposal in self.proposals:
             all_entries.append({
@@ -824,6 +834,10 @@ class CommitteeHistory :
                     elif message_count > len(self.character_contexts) and message_count <= 2*len(self.character_contexts) and current_phase != "responses":
                         f.write("\n\n=== RESPONSES AND DISCUSSIONS ===\n\n")
                         current_phase = "responses"
+                
+                elif entry_type == "private_note" and current_phase != "private_notes":
+                    f.write("\n\n=== PRIVATE NOTES ===\n\n")
+                    current_phase = "private_notes"
                     
                 elif entry_type == "proposal" and current_phase != "proposals":
                     f.write("\n\n=== PROPOSALS ===\n\n")
@@ -838,6 +852,10 @@ class CommitteeHistory :
                 # Format the entry based on type
                 if entry_type == "message":
                     f.write(f"[{entry['time']}] {entry['speaker']}:\n")
+                    f.write(f"{entry['content']}\n\n")
+                
+                elif entry_type == "private_note":
+                    f.write(f"[{entry['time']}] {entry['author']} - PRIVATE NOTE:\n")
                     f.write(f"{entry['content']}\n\n")
                     
                 elif entry_type == "proposal":

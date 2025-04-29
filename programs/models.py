@@ -161,7 +161,14 @@ class OpenAIModel(Model) :
                 })
         else :
             ic(f"No note history found for '{character_name}'")
+            
+        # Add the current instruction
+        payload.append({
+            'role': 'user',
+            'content': instructions
+        })
         
+        return payload
     
     def generate_payload_from_str(self, message: str) -> List[Dict[str, str]] :
         '''
@@ -547,7 +554,7 @@ class ModelManager:
     def query_character(self, character_name: str, message: str, history: CommitteeHistory) -> str :
         '''
         Query the character with the given message. This performs a single
-        API call with a SINGLE MESSAGE WITH NO MESSAGE CONTEXT HISTORY.
+        API call with the message and its context history.
         '''
         if character_name not in self.characters :
             raise ValueError(f"Character {character_name} not found in character list.")
@@ -555,9 +562,9 @@ class ModelManager:
         model_name = self.characters[character_name]
         model = self._get_model(model_name)
         
-        return model.query(message)
-            
-            
+        # Generate payload with context history
+        payload = model.generate_payload(message, character_name, history)
+        return model.query(payload)
 
 
 def main() -> None : # tester

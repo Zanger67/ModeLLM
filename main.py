@@ -3,7 +3,7 @@ import time
 from typing import Dict, List, Any
 
 from programs.models import ModelManager
-from programs.history import CommitteeHistory, Message, Note, Proposal
+from programs.history import CommitteeHistory, Message, Note, Proposal, DelegateRanking
 
 # Topic for debate
 TOPIC = "Climate Change Policy: Global Carbon Tax"
@@ -311,7 +311,19 @@ def run_simulation():
         except Exception as e:
             print(f"Error getting response from {delegate}: {e}")
     
-    # 2. Proposal phase - let each delegate submit a proposal
+    # 2. Private notes - MOVED UP before proposals to use notes in discussion
+    print("\n=== DELEGATES TAKING PRIVATE NOTES ===\n")
+    for delegate in all_delegates:
+        prompt = NOTE_PROMPT
+        try:
+            response = mm.query_character(delegate, prompt, history)
+            history.add_history(create_note(response, delegate))
+            print(f"[{delegate} - PRIVATE NOTE]: {response}\n")
+            time.sleep(1)
+        except Exception as e:
+            print(f"Error getting note from {delegate}: {e}")
+    
+    # 3. Proposal phase - let each delegate submit a proposal
     print("\n=== PROPOSAL PHASE ===\n")
     proposals = []
     for delegate in all_delegates:
@@ -330,7 +342,7 @@ def run_simulation():
         except Exception as e:
             print(f"Error getting proposal from {delegate}: {e}")
     
-    # 3. Pairwise discussion phase - delegates discuss each other's proposals
+    # 4. Pairwise discussion phase - delegates discuss each other's proposals
     print("\n=== PAIRWISE DISCUSSIONS ===\n")
     
     # Generate all possible pairs of delegates
@@ -374,18 +386,6 @@ def run_simulation():
         except Exception as e:
             print(f"Error getting response from {delegate2}: {e}")
     
-    # 4. Private notes
-    print("\n=== DELEGATES TAKING PRIVATE NOTES ===\n")
-    for delegate in all_delegates:
-        prompt = NOTE_PROMPT
-        try:
-            response = mm.query_character(delegate, prompt, history)
-            history.add_history(create_note(response, delegate))
-            print(f"[{delegate} - PRIVATE NOTE]: {response}\n")
-            time.sleep(1)
-        except Exception as e:
-            print(f"Error getting note from {delegate}: {e}")
-    
     # 5. Voting phase - vote on each proposal
     print("\n=== VOTING PHASE ===\n")
     for proposal in proposals:
@@ -414,6 +414,8 @@ def run_simulation():
                 vote = parsed["vote"]
                     
                 voting_record.add_vote(delegate, vote)
+                # Ensure the vote is recorded in the history's record_vote method
+                history.record_vote(delegate, proposal.id, vote)
                 print(f"[{delegate}]: Votes {vote.upper()}")
                 print(f"Explanation: {response}\n")
                 time.sleep(1)
@@ -421,6 +423,7 @@ def run_simulation():
                 print(f"Error getting vote from {delegate}: {e}")
                 # Default to abstain on error
                 voting_record.add_vote(delegate, "abstain")
+                history.record_vote(delegate, proposal.id, "abstain")
         
         # Close vote and show results
         history.close_vote(proposal.id)
