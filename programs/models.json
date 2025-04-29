@@ -1,0 +1,122 @@
+{
+    "chatgpt-4o-latest": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-3.5-turbo": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-3.5-turbo-0125": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4-0613": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4-turbo-2024-04-09": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4.1": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4.1-mini-2025-04-14": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4.1-nano-2025-04-14": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4o-2024-11-20": {
+        "class": "openai",
+        "priority": false
+    },
+    "gpt-4o-mini-2024-07-18": {
+        "class": "openai",
+        "priority": false
+    },
+    "o1": {
+        "class": "openai",
+        "priority": false
+    },
+    "o1-mini": {
+        "class": "openai",
+        "priority": false
+    },
+    "o1-pro": {
+        "class": "openai",
+        "priority": false
+    },
+    "o3": {
+        "class": "openai",
+        "priority": false
+    },
+    "o3-mini": {
+        "class": "openai",
+        "priority": false
+    },
+    "o4-mini": {
+        "class": "openai",
+        "priority": false
+    },
+    "o4-mini-2025-04-16": {
+        "class": "openai",
+        "priority": false
+    },
+    "meta-llama/Llama-2-7b-chat-hf": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "mistralai/Mistral-7B-Instruct-v0.2": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "tiiuae/falcon-7b-instruct": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "google/gemma-7b-it": {
+        "class": "huggingface",
+        "priority": true
+    },
+    "stabilityai/stablelm-zephyr-3b": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "microsoft/phi-2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "gpt2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "facebook/opt-125m": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "microsoft/phi-1_5": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "distilgpt2": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+        "class": "huggingface",
+        "priority": false
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+        "class": "huggingface",
+        "priority": false
+    }
+}

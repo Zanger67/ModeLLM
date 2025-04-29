@@ -1,0 +1,24 @@
+[
+    {
+        "time": "2023-10-01T12:00:00Z",
+        "type": "message",
+        "id": "1",
+        "speaker": "Delegate for Belgium, Committee Chair, YOU",
+        "listeners": [
+            "Belgium",
+            "Brussels",
+            "Chair",
+            "YOU"
+        ],
+        "content": "insert speech or message data here",
+        "context": "moderated debate/private discussion/group discussion",
+        "word_cap": 200 // OPTIONAL -- simulation of speaking time limit
+    },
+    {
+        "time": "2023-10-01T12:01:00Z",
+        "type": "personal note",
+        "id": "2",
+        "content": "message that an ai leaves for itself regarding its future intentions and plans etc."
+    }
+    ...
+]
