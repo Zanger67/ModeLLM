@@ -115,7 +115,7 @@ The project includes utilities for analyzing simulation results:
   - `topics.json` - Debate topics and country profiles
   - `utils.py` - Utility functions for parsing and formatting
 - `templates/` - Templates for export formats
-- `results/` - Output directory for simulation results
+- `results/` - Output directory for simulation results -> dataset for evaluation. Note that we didn't use any external dataset but created our own for benchmarking + evaluation
 - `deprecated/` - Legacy code kept for reference
 
 ## Requirements
