@@ -8,7 +8,7 @@ This project creates a simulated environment where LLM agents representing diffe
 
 ## Features
 
-- Multi-agent simulation with different LLMs via API calls (OpenAI, Hugging Face, Replicate)
+- Multi-agent simulation with different LLMs via API calls (OpenAI)
 - Realistic parliamentary procedure with structured debate phases:
   - Opening statements
   - Private strategic notes
@@ -43,7 +43,7 @@ The simulation employs a sophisticated context memory system:
 - Private notes are included in context for the authoring delegate only
 - Character personalities and national interests guide responses consistently
 - Prompts for each phase build upon the accumulated context
-- Messages are formatted appropriately for different model providers (OpenAI, Hugging Face)
+- Messages are formatted appropriately for different model providers (OpenAI)
 
 This context-rich approach ensures delegates maintain consistent positions, can reference previous statements, and develop more coherent diplomatic strategies.
 
@@ -63,7 +63,7 @@ The final leaderboard ranks delegates based primarily on peer assessment points,
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/model-un-simulation.git
+git clone https://github.com/Zanger67/CS4650_NLP_GroupProject.git
 ```
 
 2. Install dependencies:
