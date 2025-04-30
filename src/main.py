@@ -21,7 +21,12 @@ default_models = {
 }
 
 class Committee:
-    def __init__(self, topic_name, topics_file="src/topics.json"):
+    def __init__(self, topic_name, topics_file=None):
+        if topics_file is None:
+            # Get the directory where the script is located
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            topics_file = os.path.join(script_dir, "topics.json")
+        
         topics = json.loads(open(topics_file).read())
         
         self.topic: str = topics[topic_name]['topic']
@@ -44,14 +49,21 @@ class Context:
         self.history = history
 
 class Simulation:
-    def __init__(self, topic, models, output_dir="results"):
+    def __init__(self, topic, models, output_dir=None):
         # Initialize model manager and committee history
         self.comm: Committee = Committee(topic)
         self.mm: ModelManager = ModelManager()
         self.history: CommitteeHistory = CommitteeHistory()
         self.ctx: Context = Context(self.comm, self.mm, self.history)
         
-        self.output_dir = output_dir
+        # Set output directory to project root's results folder by default
+        if output_dir is None:
+            # Get the script's directory and go up one level to project root
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            self.output_dir = os.path.join(project_root, "results")
+        else:
+            self.output_dir = output_dir
         
         # Assign different Hugging Face models to different delegates
         # Using smaller models that work better with the Inference API
@@ -108,8 +120,8 @@ class Simulation:
             
         # Export all data
         history_file = self.history.export_to_file(os.path.join(results_dir, f"committee_history.json"))
-        leaderboard_file = self.history.export_leaderboard(os.path.join(results_dir, f"delegate_leaderboards.json"))
-        dialogue_file = self.history.export_dialogue(os.path.join(results_dir, f"dialogue_transcripts.txt"))
+        leaderboard_file = self.history.export_leaderboard(os.path.join(results_dir, f"delegate_leaderboard.json"))
+        dialogue_file = self.history.export_dialogue(os.path.join(results_dir, f"dialogue_transcript.txt"))
         metrics_file = self.history.export_metrics(os.path.join(results_dir, f"performance_metrics.json"))
         
         print("\n=== SIMULATION COMPLETE ===\n")
@@ -325,12 +337,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Model UN Simulation")
     parser.add_argument("-t", "--topic", type=str, help="topic for the Model UN simulation", default=default_topic)
     parser.add_argument("-m", "--models", type=json.loads, help="model for the Model UN simulation", default=default_models,)
+    parser.add_argument("-o", "--output", type=str, help="output directory for results", default=None)
     args = parser.parse_args()
 
     """Run the Model UN simulation."""
     print("Starting Model UN Simulation")
     print("=" * 50)
-    sim = Simulation(args.topic, args.models)
+    sim = Simulation(args.topic, args.models, args.output)
     
     try:
         history = sim.run()
