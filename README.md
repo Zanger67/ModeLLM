@@ -74,8 +74,6 @@ pip install -r requirements.txt
 3. Create a `.env` file with your API keys:
 ```
 OPENAI_API_KEY=your_openai_key_here
-HF_API_KEY=your_huggingface_key_here
-REPLICATE_API_TOKEN=your_replicate_token_here
 ```
 
 4. Run the simulation:
