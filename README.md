@@ -74,6 +74,8 @@ pip install -r requirements.txt
 3. Create a `.env` file with your API keys:
 ```
 OPENAI_API_KEY=your_openai_key_here
+HF_API_KEY=your_huggingface_key_here
+REPLICATE_API_TOKEN=your_replicate_token_here
 ```
 
 4. Run the simulation:
@@ -84,37 +86,42 @@ python3 src/main.py
 ## Configuration
 
 - Edit `src/models/models.json` to add new models or change priority settings
-- (Optional) Adjust `characters` dictionary in `topics.json` to adjust characters and topics
-- Run `src/main.py -t [topic_name from topics.json] -m [{country: model} json string]`
+- Adjust topics and characters in `src/topics.json` to create new debate scenarios
+- Run with custom parameters:
+  ```bash
+  python3 src/main.py -t [topic_name] -m '{"USA":"gpt-3.5-turbo","China":"gpt-4o","EU":"claude-3-opus-20240229","India":"gemini-1.0-pro"}'
+  ```
 
 ## Output
 
-The simulation generates several output files in the `results` directory:
-- JSON history files with all messages, notes, proposals, and voting records
-- Performance metrics tracking each agent's effectiveness
-- Leaderboard rankings based on peer assessments
-- Human-readable dialogue transcript that includes all exchanges, private notes, proposals, and voting results
+The simulation generates several output files in the `results` directory with a timestamp:
+- `committee_history.json`: Complete record of all messages, notes, proposals, and voting
+- `performance_metrics.json`: Detailed metrics for each delegate's performance
+- `delegate_leaderboard.json`: Final rankings and scores for all delegates
+- `dialogue_transcript.txt`: Human-readable transcript of the entire debate session
 
-## Adding New Models
+## Data Analysis Tools
 
-To add support for a new LLM provider:
-1. Create a new class that inherits from the `Model` abstract base class
-2. Implement the required methods (`_load_model()`, `query()`, `generate_payload()`)
-3. Update the `_load_model_options()` method in `ModelManager` to include your new class
-4. Add models to the `models.json` configuration file
+The project includes utilities for analyzing simulation results:
+- `src/model_evaluation.py`: Script to aggregate performance metrics across multiple simulation runs
 
 ## Project Structure
 
-- `programs/` - Core modules and classes
-  - `models.py` - Model implementations for different LLM providers
-  - `history.py` - Conversation tracking, metrics, and ranking systems
-  - `models.json` - Configuration for available models
+- `src/` - Core source code
+  - `main.py` - Main simulation script
+  - `models/` - Model implementations and management
+    - `models.py` - Model class implementations for different LLM providers
+    - `history.py` - Conversation tracking, metrics, and ranking systems
+    - `models.json` - Configuration for available models
+  - `prompts.py` - Prompt templates for different debate phases
+  - `topics.json` - Debate topics and country profiles
+  - `utils.py` - Utility functions for parsing and formatting
 - `templates/` - Templates for export formats
-- `exports/` - Output directory for simulation results
-- `main.py` - Main simulation script
+- `results/` - Output directory for simulation results
+- `deprecated/` - Legacy code kept for reference
 
 ## Requirements
 
 - Python 3.9+
 - Dependencies listed in requirements.txt
-- API keys for the LLM providers you want to use
+- API keys for the LLM providers, in our case openAI
