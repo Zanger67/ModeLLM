@@ -80,18 +80,18 @@ REPLICATE_API_TOKEN=your_replicate_token_here
 
 4. Run the simulation:
 ```bash
-python3 main.py
+python3 src/main.py
 ```
 
 ## Configuration
 
-- Modify `main.py` to change the debate topic, characters, or prompts
-- Edit `models.json` to add new models or change priority settings
-- Adjust `CHARACTERS` dictionary in `main.py` to change which countries participate
+- Edit `src/models/models.json` to add new models or change priority settings
+- (Optional) Adjust `characters` dictionary in `topics.json` to adjust characters and topics
+- Run `src/main.py -t [topic_name from topics.json] -m [{country: model} json string]`
 
 ## Output
 
-The simulation generates several output files in the `exports` directory:
+The simulation generates several output files in the `results` directory:
 - JSON history files with all messages, notes, proposals, and voting records
 - Performance metrics tracking each agent's effectiveness
 - Leaderboard rankings based on peer assessments

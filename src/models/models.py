@@ -4,11 +4,11 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
 
 import dotenv
-import replicate
+# import replicate
 from icecream import ic
 from openai import OpenAI
 
-from programs.history import CommitteeHistory, Message, Note
+from models.history import CommitteeHistory, Message, Note
 
 dotenv.load_dotenv()
 

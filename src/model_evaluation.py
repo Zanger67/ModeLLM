@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 
 # Corrected directory path
-DATA_DIR = "exports/performance_metrics"
+DATA_DIR = "results"
 
 # Stores total ranking points and counts per delegate
 delegate_stats = defaultdict(lambda: {"total_points": 0, "count": 0})
@@ -12,22 +12,21 @@ delegate_stats = defaultdict(lambda: {"total_points": 0, "count": 0})
 model_stats = defaultdict(lambda: {"total_points": 0, "count": 0})
 
 # Read all JSON files from the directory
-for filename in os.listdir(DATA_DIR):
-    if filename.endswith(".json"):
-        filepath = os.path.join(DATA_DIR, filename)
-        with open(filepath, "r") as f:
-            data = json.load(f)
-            for delegate, stats in data.items():
-                model = stats["model_name"]
-                points = stats["ranking_points"]
+for run in os.listdir(DATA_DIR):
+    filepath = os.path.join(DATA_DIR, run, 'performance_metrics.json')
+    with open(filepath, "r") as f:
+        data = json.load(f)
+        for delegate, stats in data.items():
+            model = stats["model_name"]
+            points = stats["ranking_points"]
 
-                # Update delegate stats
-                delegate_stats[delegate]["total_points"] += points
-                delegate_stats[delegate]["count"] += 1
+            # Update delegate stats
+            delegate_stats[delegate]["total_points"] += points
+            delegate_stats[delegate]["count"] += 1
 
-                # Update model stats
-                model_stats[model]["total_points"] += points
-                model_stats[model]["count"] += 1
+            # Update model stats
+            model_stats[model]["total_points"] += points
+            model_stats[model]["count"] += 1
 
 # Print delegate-based results
 print("Ranking Points by Delegate:")
