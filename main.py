@@ -281,9 +281,9 @@ def run_simulation():
     # Assign different Hugging Face models to different delegates
     # Using smaller models that work better with the Inference API
     models = {
-        "USA": "gpt-4o-2024-11-20",
-        "China": "o1",
-        "EU": "gpt-4.1", 
+        "USA": "o1",
+        "China": "gpt-4o-2024-11-20",  
+        "EU": "gpt-4.1",
         "India": "gpt-4",
     }
     

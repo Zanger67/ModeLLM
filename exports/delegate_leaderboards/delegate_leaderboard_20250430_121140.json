@@ -1,0 +1,30 @@
+[
+    {
+        "delegate": "India",
+        "ranking_points": 8,
+        "proposals_passed": 1,
+        "reputation_score": 5.5,
+        "rank": 1
+    },
+    {
+        "delegate": "EU",
+        "ranking_points": 6,
+        "proposals_passed": 1,
+        "reputation_score": 5.5,
+        "rank": 2
+    },
+    {
+        "delegate": "USA",
+        "ranking_points": 5,
+        "proposals_passed": 1,
+        "reputation_score": 5.5,
+        "rank": 3
+    },
+    {
+        "delegate": "China",
+        "ranking_points": 5,
+        "proposals_passed": 1,
+        "reputation_score": 5.5,
+        "rank": 4
+    }
+]
