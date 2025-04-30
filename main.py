@@ -281,10 +281,10 @@ def run_simulation():
     # Assign different Hugging Face models to different delegates
     # Using smaller models that work better with the Inference API
     models = {
-        "USA": "gpt-4.1",                      # GPT-2 model for USA
-        "China": "gpt-4o-2024-11-20",       # OPT-125m for China
-        "EU": "o1",          # Phi-1.5 for EU 
-        "India": "gpt-4"               # DistilGPT-2 for India
+        "USA": "gpt-4o-2024-11-20",
+        "China": "o1",
+        "EU": "gpt-4.1", 
+        "India": "gpt-4",
     }
     
     # Setup characters with their respective models
@@ -292,6 +292,7 @@ def run_simulation():
         model_name = models.get(country, "gpt2")  # Fallback to gpt2 if not specified
         mm.add_character(country, model_name)
         history.add_character_context(country, description)
+        history.add_model_name(country, model_name)
         print(f"Assigned {model_name} to {country}")
     
     all_delegates = list(CHARACTERS.keys())

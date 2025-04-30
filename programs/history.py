@@ -242,6 +242,7 @@ class PerformanceMetrics:
     Class to track metrics for evaluating agent performance.
     """
     character_name: str
+    model_name: str
     messages_sent: int = 0
     messages_received: int = 0
     notes_created: int = 0
@@ -253,6 +254,7 @@ class PerformanceMetrics:
     
     def __init__(self, character_name: str):
         self.character_name = character_name
+        self.model_name = None
         self.messages_sent = 0
         self.messages_received = 0
         self.notes_created = 0
@@ -274,6 +276,7 @@ class PerformanceMetrics:
         
     def __str__(self):
         return (f"Metrics for {self.character_name}:\n"
+                f"- Model: {self.model_name}\n"
                 f"- Messages sent: {self.messages_sent}\n"
                 f"- Messages received: {self.messages_received}\n"
                 f"- Notes created: {self.notes_created}\n"
@@ -532,7 +535,7 @@ class CommitteeHistory :
         # Generate a default filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports", "committee_histories")
             
             # Create exports directory if it doesn't exist
             os.makedirs(output_dir, exist_ok=True)
@@ -619,6 +622,19 @@ class CommitteeHistory :
     def get_all_voting_records(self) -> List[VotingRecord]:
         """Get all voting records."""
         return self.voting_records
+    
+    def add_model_name(self, character: str, model_name: str) -> None :
+        '''
+        Add a model name to metrics.
+        
+        Args:
+            character (str): Name of the character.
+            model_name (str): Name of the model used.
+        '''
+
+        if character not in self.metrics:
+            self.metrics[character] = PerformanceMetrics(character)
+        self.metrics[character].model_name = model_name
 
     def record_vote(self, character: str, proposal_id: str, vote: str) -> bool:
         """
@@ -675,6 +691,7 @@ class CommitteeHistory :
         metrics_data = {}
         for name, metrics in self.metrics.items():
             metrics_data[name] = {
+                "model_name": metrics.model_name,
                 "messages_sent": metrics.messages_sent,
                 "messages_received": metrics.messages_received,
                 "notes_created": metrics.notes_created,
@@ -688,7 +705,7 @@ class CommitteeHistory :
         # Generate a default filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports", "performance_metrics")
             
             # Create exports directory if it doesn't exist
             os.makedirs(output_dir, exist_ok=True)
@@ -720,7 +737,7 @@ class CommitteeHistory :
         # Generate a default filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports", "dialogue_transcripts")
             
             # Create exports directory if it doesn't exist
             os.makedirs(output_dir, exist_ok=True)
@@ -939,7 +956,7 @@ class CommitteeHistory :
         # Generate a default filename if none provided
         if output_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports")
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "exports", "delegate_leaderboards")
             
             # Create exports directory if it doesn't exist
             os.makedirs(output_dir, exist_ok=True)
