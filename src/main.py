@@ -1,18 +1,27 @@
 import os
+import json
 import time
 from datetime import datetime
 
 from models.models import ModelManager
 from models.history import CommitteeHistory, Proposal, DelegateRanking
 
-from src.utils import *
-from src.prompts import prompts
+from utils import *
+from prompts import prompts
 
-import json
 
+import argparse
+
+default_topic = "climate_change"
+default_models = {
+    "USA": "gpt-3.5-turbo",
+    "China": "gpt-3.5-turbo",
+    "EU": "gpt-3.5-turbo", 
+    "India": "gpt-3.5-turbo",
+}
 
 class Committee:
-    def __init__(self, topic_name, topics_file="topics.json"):
+    def __init__(self, topic_name, topics_file="src/topics.json"):
         topics = json.loads(open(topics_file).read())
         
         self.topic: str = topics[topic_name]['topic']
@@ -313,18 +322,15 @@ class Simulation:
     
     
 if __name__ == "__main__":
-    topic = "climate_change"
-    models = {
-        "USA": "gpt-3.5-turbo",
-        "China": "gpt-3.5-turbo",
-        "EU": "gpt-3.5-turbo", 
-        "India": "gpt-3.5-turbo",
-    }
-    
+    parser = argparse.ArgumentParser(description="Run Model UN Simulation")
+    parser.add_argument("-t", "--topic", type=str, help="topic for the Model UN simulation", default=default_topic)
+    parser.add_argument("-m", "--models", type=json.loads, help="model for the Model UN simulation", default=default_models,)
+    args = parser.parse_args()
+
     """Run the Model UN simulation."""
     print("Starting Model UN Simulation")
     print("=" * 50)
-    sim = Simulation(topic, models)
+    sim = Simulation(args.topic, args.models)
     
     try:
         history = sim.run()

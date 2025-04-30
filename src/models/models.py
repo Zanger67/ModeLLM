@@ -8,7 +8,7 @@ import dotenv
 from icecream import ic
 from openai import OpenAI
 
-from programs.history import CommitteeHistory, Message, Note
+from models.history import CommitteeHistory, Message, Note
 
 dotenv.load_dotenv()
 

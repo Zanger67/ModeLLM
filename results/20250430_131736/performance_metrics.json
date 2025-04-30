@@ -1,6 +1,6 @@
 {
     "USA": {
-        "model_name": "gpt-4.1",
+        "model_name": "gpt-4",
         "messages_sent": 4,
         "messages_received": 16,
         "notes_created": 1,
@@ -18,10 +18,21 @@
         "proposals_created": 1,
         "votes_cast": 3,
         "proposals_passed": 1,
-        "ranking_points": 7,
+        "ranking_points": 5,
         "reputation_score": 5.5
     },
     "EU": {
+        "model_name": "gpt-4.1",
+        "messages_sent": 4,
+        "messages_received": 16,
+        "notes_created": 1,
+        "proposals_created": 1,
+        "votes_cast": 3,
+        "proposals_passed": 1,
+        "ranking_points": 6,
+        "reputation_score": 5.5
+    },
+    "India": {
         "model_name": "o1",
         "messages_sent": 4,
         "messages_received": 16,
@@ -29,18 +40,7 @@
         "proposals_created": 1,
         "votes_cast": 3,
         "proposals_passed": 1,
-        "ranking_points": 7,
-        "reputation_score": 5.5
-    },
-    "India": {
-        "model_name": "gpt-4",
-        "messages_sent": 4,
-        "messages_received": 16,
-        "notes_created": 1,
-        "proposals_created": 1,
-        "votes_cast": 3,
-        "proposals_passed": 1,
-        "ranking_points": 5,
+        "ranking_points": 8,
         "reputation_score": 5.5
     }
 }
